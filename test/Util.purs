@@ -3,9 +3,9 @@ module Test.Util where
 import Prelude
 
 import Prim.Row as Row
-import Prim.RowList (class RowToList, Cons, Nil, kind RowList)
+import Prim.RowList (class RowToList, Cons, Nil, RowList)
 import Record (get)
-import Type.Prelude (class IsSymbol, RLProxy(..), SProxy(..))
+import Type.Prelude (class IsSymbol, Proxy(..))
 
 -- | Check two records of the same type for equality.
 equal
@@ -15,10 +15,10 @@ equal
   => Record r
   -> Record r
   -> Boolean
-equal a b = equalFields (RLProxy :: RLProxy rs) a b
+equal a b = equalFields (Proxy :: Proxy rs) a b
 
-class EqualFields (rs :: RowList) (row :: # Type) | rs -> row where
-  equalFields :: RLProxy rs -> Record row -> Record row -> Boolean
+class EqualFields (rs :: RowList Type) (row :: Row Type) | rs -> row where
+  equalFields :: Proxy rs -> Record row -> Record row -> Boolean
 
 instance equalFieldsCons
   ::
@@ -29,8 +29,8 @@ instance equalFieldsCons
   ) => EqualFields (Cons name ty tail) row where
   equalFields _ a b = get' a == get' b && rest
     where
-      get' = get (SProxy :: SProxy name)
-      rest = equalFields (RLProxy :: RLProxy tail) a b
+      get' = get (Proxy :: Proxy name)
+      rest = equalFields (Proxy :: Proxy tail) a b
 
 instance equalFieldsNil :: EqualFields Nil row where
   equalFields _ _ _ = true

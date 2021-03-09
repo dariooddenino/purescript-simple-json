@@ -49,10 +49,9 @@ import Foreign (F, Foreign, ForeignError(..), MultipleErrors, fail, isNull, isUn
 import Foreign.Index (readProp)
 import Foreign.Object (Object)
 import Foreign.Object as Object
-import Global.Unsafe (unsafeStringify)
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
-import Prim.RowList (class RowToList, Cons, Nil, kind RowList)
+import Prim.RowList (class RowToList, Cons, Nil, RowList)
 import Record (get)
 import Record.Builder (Builder)
 import Record.Builder as Builder
@@ -89,7 +88,7 @@ writeJSON :: forall a
   .  WriteForeign a
   => a
   -> String
-writeJSON = unsafeStringify <<< writeImpl
+writeJSON = _unsafeStringify <<< writeImpl
 
 write :: forall a
   .  WriteForeign a
@@ -137,6 +136,8 @@ parseJSON
   where
     -- Nate Faubion: "It uses unsafePerformEffect because that’s the only way to catch exceptions and still use the builtin json decoder"
     runPure = unsafePerformEffect
+
+foreign import _unsafeStringify :: forall a. a -> String
 
 foreign import _undefined :: Foreign
 
@@ -202,7 +203,7 @@ instance readRecord ::
       fieldListP = RLProxy :: RLProxy fieldList
 
 -- | A class for reading foreign values from properties
-class ReadForeignFields (xs :: RowList) (from :: # Type) (to :: # Type)
+class ReadForeignFields (xs :: RowList Type) (from :: Row Type) (to :: Row Type)
   | xs -> from to where
   getFields :: RLProxy xs
     -> Foreign
@@ -248,7 +249,7 @@ instance readForeignVariant ::
   ) => ReadForeign (Variant variants) where
   readImpl o = readVariantImpl (RLProxy :: RLProxy rl) o
 
-class ReadForeignVariant (xs :: RowList) (row :: # Type)
+class ReadForeignVariant (xs :: RowList Type) (row :: Row Type)
   | xs -> row where
   readVariantImpl :: RLProxy xs
     -> Foreign
@@ -321,7 +322,7 @@ instance recordWriteForeign ::
       rlp = RLProxy :: RLProxy rl
       steps = writeImplFields rlp rec
 
-class WriteForeignFields (rl :: RowList) row (from :: # Type) (to :: # Type)
+class WriteForeignFields (rl :: RowList Type) row (from :: Row Type) (to :: Row Type)
   | rl -> row from to where
   writeImplFields :: forall g. g rl -> Record row -> Builder (Record from) (Record to)
 
@@ -350,7 +351,7 @@ instance writeForeignVariant ::
   ) => WriteForeign (Variant row) where
   writeImpl variant = writeVariantImpl (RLProxy :: RLProxy rl) variant
 
-class WriteForeignVariant (rl :: RowList) (row :: # Type)
+class WriteForeignVariant (rl :: RowList Type) (row :: Row Type)
   | rl -> row where
   writeVariantImpl :: forall g. g rl -> Variant row -> Foreign
 
